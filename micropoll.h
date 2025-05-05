@@ -48,6 +48,13 @@ micropoll_cb(int (*fn)(struct micropoll *, int, void *), void *data)
 }
 
 MICROPOLL_FUNCTION int
+micropoll_retry(int ret)
+{
+    return (ret == -1) && (errno == EAGAIN || errno == EWOULDBLOCK ||
+                           errno == EINTR  || errno == ENOBUFS);
+}
+
+MICROPOLL_FUNCTION int
 micropoll_set_cb(struct micropoll_fd *mfd, short event, struct micropoll_cb cb)
 {
     if (!mfd || !event)
@@ -139,6 +146,9 @@ micropoll(struct micropoll *mp, int timeout)
         map[n] = i;
         n++;
     }
+    if (!n)
+        return -2;
+
     int ret = poll(pfd, n, timeout);
 
     if (ret <= 0)
